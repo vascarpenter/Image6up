@@ -2,6 +2,7 @@
     Image6up
 
     画像を6枚分貼り付けて印刷するために整形するプログラム
+    え？ Wordのplaceholderでできるって？
 
     Copyright © 2021 gikoha
  */
@@ -18,7 +19,7 @@ import java.awt.print.Printable.PAGE_EXISTS
 import java.awt.print.PrinterException
 import java.awt.print.PrinterJob
 import java.util.*
-import javax.print.attribute.HashPrintJobAttributeSet
+import javax.print.attribute.HashPrintRequestAttributeSet
 import javax.print.attribute.standard.Copies
 import javax.print.attribute.standard.MediaPrintableArea
 import javax.print.attribute.standard.MediaSizeName
@@ -28,9 +29,9 @@ import javax.swing.*
 var imagesPanel: Vector<JPanel> = Vector<JPanel>()
 var images: Vector<Image> = Vector<Image>()
 
-class customListCellRenderer : DefaultListCellRenderer()
+class CustomListCellRenderer : DefaultListCellRenderer()
 {
-    public override fun getListCellRendererComponent(
+    override fun getListCellRendererComponent(
         list: JList<*>?,
         value: Any?,
         index: Int,
@@ -57,25 +58,22 @@ class customListCellRenderer : DefaultListCellRenderer()
     }
 }
 
-class printOnePage : Printable
+class PrintOnePage : Printable
 {
     override fun print(graphics: Graphics?, pageFormat: PageFormat?, pageIndex: Int): Int
     {
-        if (pageIndex != 0) return NO_SUCH_PAGE;
-        var g2 = graphics as Graphics2D
+        if (pageIndex != 0) return NO_SUCH_PAGE
+        val g2 = graphics as Graphics2D
         //        g2.setFont(Font(DIALOG,PLAIN,12))
         //        g2.setStroke(BasicStroke(0.5f ))
         //        g2.drawString("ogehage",0,0)
-        var j = 0
-        for (i in images)
+        for ((j, image) in images.withIndex())
         {
-            var xx = 250 * (j / 3)
-            var yy = 250 * (j % 3)
-            g2.drawImage(i.getScaledInstance(240, 240, Image.SCALE_SMOOTH), xx, yy, null)
-
-            j++
+            val xx = 250 * (j / 3)
+            val yy = 250 * (j % 3)
+            g2.drawImage(image.getScaledInstance(240, 240, Image.SCALE_SMOOTH), xx, yy, null)
         }
-        return PAGE_EXISTS;
+        return PAGE_EXISTS
     }
 
 }
@@ -86,14 +84,14 @@ fun main(args: Array<String>)
     val g = gui()
     f.contentPane = g.panel
     f.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    f.setSize(800, 500)
+    f.setSize(600, 500)
     f.isResizable = true
     f.setLocationRelativeTo(null)
     f.isVisible = true
 
     g.list1.visibleRowCount = 3
     g.list1.layoutOrientation = JList.VERTICAL_WRAP
-    g.list1.setCellRenderer(customListCellRenderer())
+    g.list1.cellRenderer = CustomListCellRenderer()
 
     g.list1.setListData(imagesPanel)
 
@@ -102,10 +100,12 @@ fun main(args: Array<String>)
     {
         override fun mouseClicked(evt: MouseEvent)
         {
-            val list = evt.getSource() as JList<*>
-            if (evt.getClickCount() === 2)
+            val list = evt.source as JList<*>
+            if (evt.clickCount == 2)
             {
-                val index = list.locationToIndex(evt.getPoint())
+                if (images.count() <= 0)
+                    return      // imageがないなら削除できないね
+                val index = list.locationToIndex(evt.point)
                 imagesPanel.removeElementAt(index)
                 images.removeElementAt(index)
                 g.list1.setListData(imagesPanel)
@@ -118,12 +118,12 @@ fun main(args: Array<String>)
     g.readClipboardButton.addActionListener {
         if (images.count() >= 6) return@addActionListener
 
-        var clip: Clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        var data = clip.getContents(null)
+        val clip: Clipboard = Toolkit.getDefaultToolkit().systemClipboard
+        val data = clip.getContents(null)
         if (!data.isDataFlavorSupported(DataFlavor.imageFlavor)) return@addActionListener
 
-        var img = clip.getData(DataFlavor.imageFlavor) as Image
-        var oneline = JPanel()
+        val img = clip.getData(DataFlavor.imageFlavor) as Image
+        val oneline = JPanel()
         oneline.preferredSize = Dimension(80, 80)
         oneline.add(JLabel(ImageIcon(img.getScaledInstance(80, 80, Image.SCALE_DEFAULT))))
         images.addElement(img)
@@ -134,17 +134,17 @@ fun main(args: Array<String>)
     // Printボタン リストを成形し印刷
     g.printButton.addActionListener {
         if (images.count() <= 0) return@addActionListener
-        var rqset = HashPrintJobAttributeSet()
-        rqset.add(Copies(1))
-        rqset.add(MediaSizeName.ISO_A4)
-        rqset.add(MediaPrintableArea(10.1f, 10.3f, 189.8f, 276.4f, MediaPrintableArea.MM))
-        var pj = PrinterJob.getPrinterJob()
-        pj.setPrintable(printOnePage())
-        if (pj.printDialog())
+        val printAttr = HashPrintRequestAttributeSet()
+        printAttr.add(Copies(1))
+        printAttr.add(MediaSizeName.ISO_A4)
+        printAttr.add(MediaPrintableArea(10.1f, 10.3f, 189.8f, 276.4f, MediaPrintableArea.MM))
+        val pj = PrinterJob.getPrinterJob()
+        pj.setPrintable(PrintOnePage())
+        if (pj.printDialog(printAttr))
         {
             try
             {
-                pj.print()
+                pj.print(printAttr)
             } catch (e: PrinterException)
             {
                 System.err.println(e)
