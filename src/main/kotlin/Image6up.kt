@@ -140,16 +140,27 @@ fun main(args: Array<String>)
         printAttr.add(MediaPrintableArea(10.1f, 10.3f, 189.8f, 276.4f, MediaPrintableArea.MM))
         val pj = PrinterJob.getPrinterJob()
         pj.setPrintable(PrintOnePage())
-        if (pj.printDialog(printAttr))
+        if (pj.printDialog())
         {
             try
             {
-                pj.print(printAttr)
+                pj.print()
             } catch (e: PrinterException)
             {
                 System.err.println(e)
             }
         }
+        /*       // EXCEPTION
+                if (pj.printDialog(printAttr))
+                {
+                    try
+                    {
+                        pj.print(printAttr)
+                    } catch (e: PrinterException)
+                    {
+                        System.err.println(e)
+                    }
+                }*/
     }
 
 }
