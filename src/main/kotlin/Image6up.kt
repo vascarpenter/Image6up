@@ -10,6 +10,8 @@
 import java.awt.*
 import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.DataFlavor
+import java.awt.event.InputEvent
+import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.print.PageFormat
@@ -78,10 +80,68 @@ class PrintOnePage : Printable
 
 }
 
+fun pasteImage(g: gui)
+{
+    if (images.count() >= 6) return
+
+    val clip: Clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    val data = clip.getContents(null)
+    if (!data.isDataFlavorSupported(DataFlavor.imageFlavor)) return
+
+    val img = clip.getData(DataFlavor.imageFlavor) as Image
+    val oneline = JPanel()
+    oneline.preferredSize = Dimension(80, 80)
+    oneline.add(JLabel(ImageIcon(img.getScaledInstance(80, 80, Image.SCALE_DEFAULT))))
+    images.addElement(img)
+    imagesPanel.addElement(oneline)
+    g.list1.setListData(imagesPanel)
+}
+
+fun printImage(g: gui)
+{
+    if (images.count() <= 0) return
+    val printAttr = HashPrintRequestAttributeSet()
+    printAttr.add(Copies(1))
+    printAttr.add(MediaSizeName.ISO_A4)
+    printAttr.add(MediaPrintableArea(10.1f, 10.3f, 189.8f, 276.4f, MediaPrintableArea.MM))
+    val pj = PrinterJob.getPrinterJob()
+    pj.setPrintable(PrintOnePage())
+    if (pj.printDialog())
+    {
+        try
+        {
+            pj.print()
+        } catch (e: PrinterException)
+        {
+            System.err.println(e)
+        }
+    }
+}
+
 fun main(args: Array<String>)
 {
     val f = JFrame("Image 6up")
     val g = gui()
+
+    var menub = JMenuBar()
+    var menuitem = JMenuItem("Paste")
+    menuitem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK)
+    menuitem.addActionListener {
+        pasteImage(g)
+    }
+    var menuitem1 = JMenuItem("Print")
+    menuitem1.addActionListener {
+        printImage(g)
+    }
+
+    var menu1 = JMenu("File")
+    var menu2 = JMenu("Edit")
+    menu1.add(menuitem1)
+    menu2.add(menuitem)
+    menub.add(menu1)
+    menub.add(menu2)
+    f.jMenuBar = menub
+
     f.contentPane = g.panel
     f.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     f.setSize(600, 500)
@@ -94,6 +154,7 @@ fun main(args: Array<String>)
     g.list1.cellRenderer = CustomListCellRenderer()
 
     g.list1.setListData(imagesPanel)
+
 
     // リストをWクリックで削除
     g.list1.addMouseListener(object : MouseAdapter()
@@ -116,51 +177,12 @@ fun main(args: Array<String>)
 
     // Pasteボタン clipboardから読み込みリストに追加
     g.readClipboardButton.addActionListener {
-        if (images.count() >= 6) return@addActionListener
-
-        val clip: Clipboard = Toolkit.getDefaultToolkit().systemClipboard
-        val data = clip.getContents(null)
-        if (!data.isDataFlavorSupported(DataFlavor.imageFlavor)) return@addActionListener
-
-        val img = clip.getData(DataFlavor.imageFlavor) as Image
-        val oneline = JPanel()
-        oneline.preferredSize = Dimension(80, 80)
-        oneline.add(JLabel(ImageIcon(img.getScaledInstance(80, 80, Image.SCALE_DEFAULT))))
-        images.addElement(img)
-        imagesPanel.addElement(oneline)
-        g.list1.setListData(imagesPanel)
+        pasteImage(g)
     }
 
     // Printボタン リストを成形し印刷
     g.printButton.addActionListener {
-        if (images.count() <= 0) return@addActionListener
-        val printAttr = HashPrintRequestAttributeSet()
-        printAttr.add(Copies(1))
-        printAttr.add(MediaSizeName.ISO_A4)
-        printAttr.add(MediaPrintableArea(10.1f, 10.3f, 189.8f, 276.4f, MediaPrintableArea.MM))
-        val pj = PrinterJob.getPrinterJob()
-        pj.setPrintable(PrintOnePage())
-        if (pj.printDialog())
-        {
-            try
-            {
-                pj.print()
-            } catch (e: PrinterException)
-            {
-                System.err.println(e)
-            }
-        }
-        /*       // EXCEPTION
-                if (pj.printDialog(printAttr))
-                {
-                    try
-                    {
-                        pj.print(printAttr)
-                    } catch (e: PrinterException)
-                    {
-                        System.err.println(e)
-                    }
-                }*/
+        printImage(g)
     }
 
 }
