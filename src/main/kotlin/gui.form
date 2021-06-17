@@ -48,7 +48,7 @@
         </constraints>
         <properties>
           <font name="Dialog" size="12" style="0"/>
-          <text value="他プログラムで画像をコピーして, Pasteボタンを押し貼り付けてください"/>
+          <text value="他プログラムで画像をコピーして, PasteボタンあるいはCTRL+Vを押し貼り付けてください"/>
         </properties>
       </component>
       <component id="f6a49" class="javax.swing.JLabel">
@@ -57,7 +57,7 @@
         </constraints>
         <properties>
           <font name="Dialog" size="12" style="0"/>
-          <text value="画像をダブルクリックで削除"/>
+          <text value="画像をダブルクリックで削除　　Printで印刷します"/>
         </properties>
       </component>
       <hspacer id="7dd6e">

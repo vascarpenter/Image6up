@@ -5,8 +5,11 @@
     え？ Wordのplaceholderでできるって？
 
     Copyright © 2021 gikoha
+
+    use imgscalr - Java Image-Scaling Library: https://github.com/rkalla/imgscalr
  */
 
+import org.imgscalr.Scalr
 import java.awt.*
 import java.awt.datatransfer.Clipboard
 import java.awt.datatransfer.DataFlavor
@@ -14,6 +17,7 @@ import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.awt.image.BufferedImage
 import java.awt.print.PageFormat
 import java.awt.print.Printable
 import java.awt.print.Printable.NO_SUCH_PAGE
@@ -71,13 +75,26 @@ class PrintOnePage : Printable
         //        g2.drawString("ogehage",0,0)
         for ((j, image) in images.withIndex())
         {
-            val xx = 250 * (j / 3)
-            val yy = 250 * (j % 3)
-            g2.drawImage(image.getScaledInstance(240, 240, Image.SCALE_SMOOTH), xx, yy, null)
+            val xx = 250 * (j / 3) + 10
+            val yy = 250 * (j % 3) + 10
+            val newimg = Scalr.resize(createBufferedImage(image), 240) // resize with keeping aspect ratio
+            g2.drawImage(newimg, xx, yy, null)
         }
         return PAGE_EXISTS
     }
 
+}
+
+// Image から BufferedImageへの変換
+//  https://www.ne.jp/asahi/hishidama/home/tech/java/image.html
+
+fun createBufferedImage(img: Image): BufferedImage
+{
+    val bimg = BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB)
+    val g = bimg.graphics
+    g.drawImage(img, 0, 0, null)
+    g.dispose()
+    return bimg
 }
 
 fun pasteImage(g: gui)
@@ -90,8 +107,9 @@ fun pasteImage(g: gui)
 
     val img = clip.getData(DataFlavor.imageFlavor) as Image
     val oneline = JPanel()
-    oneline.preferredSize = Dimension(80, 80)
-    oneline.add(JLabel(ImageIcon(img.getScaledInstance(80, 80, Image.SCALE_DEFAULT))))
+    oneline.preferredSize = Dimension(110, 110)
+    val newimg = Scalr.resize(createBufferedImage(img), 100)
+    oneline.add(JLabel(ImageIcon(newimg)))
     images.addElement(img)
     imagesPanel.addElement(oneline)
     g.list1.setListData(imagesPanel)
@@ -123,19 +141,23 @@ fun main(args: Array<String>)
     val f = JFrame("Image 6up")
     val g = gui()
 
-    var menub = JMenuBar()
-    var menuitem = JMenuItem("Paste")
+    val menub = JMenuBar()
+
+    // メニューからの Paste : CTRL+Vも追加
+    val menuitem = JMenuItem("Paste")
     menuitem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK)
     menuitem.addActionListener {
         pasteImage(g)
     }
-    var menuitem1 = JMenuItem("Print")
+
+    // メニューからの 印刷
+    val menuitem1 = JMenuItem("Print")
     menuitem1.addActionListener {
         printImage(g)
     }
 
-    var menu1 = JMenu("File")
-    var menu2 = JMenu("Edit")
+    val menu1 = JMenu("File")
+    val menu2 = JMenu("Edit")
     menu1.add(menuitem1)
     menu2.add(menuitem)
     menub.add(menu1)
