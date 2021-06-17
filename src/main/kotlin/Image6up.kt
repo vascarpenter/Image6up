@@ -146,6 +146,7 @@ fun main(args: Array<String>)
     // メニューからの Paste : CTRL+Vも追加
     val menuitem = JMenuItem("Paste")
     menuitem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK)
+    menuitem.mnemonic = KeyEvent.VK_P
     menuitem.addActionListener {
         pasteImage(g)
     }
@@ -158,7 +159,9 @@ fun main(args: Array<String>)
 
     val menu1 = JMenu("File")
     val menu2 = JMenu("Edit")
+    menu1.mnemonic = KeyEvent.VK_F
     menu1.add(menuitem1)
+    menu2.mnemonic = KeyEvent.VK_E
     menu2.add(menuitem)
     menub.add(menu1)
     menub.add(menu2)
