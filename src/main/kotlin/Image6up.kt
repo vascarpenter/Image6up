@@ -167,6 +167,8 @@ fun main(args: Array<String>)
     menub.add(menu2)
     f.jMenuBar = menub
 
+    g.readClipboardButton.mnemonic = KeyEvent.VK_P
+
     f.contentPane = g.panel
     f.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     f.setSize(600, 500)
