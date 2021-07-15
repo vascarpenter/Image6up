@@ -8,4 +8,5 @@ public class gui
     public JList list1;
     public JButton readClipboardButton;
     public JButton printButton;
+    public JButton savePDFButton;
 }

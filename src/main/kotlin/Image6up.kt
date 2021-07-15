@@ -9,6 +9,10 @@
     use imgscalr - Java Image-Scaling Library: https://github.com/rkalla/imgscalr
  */
 
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.PDPage
+import org.apache.pdfbox.pdmodel.PDPageContentStream
+import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory
 import org.imgscalr.Scalr
 import java.awt.*
 import java.awt.datatransfer.Clipboard
@@ -24,6 +28,8 @@ import java.awt.print.Printable.NO_SUCH_PAGE
 import java.awt.print.Printable.PAGE_EXISTS
 import java.awt.print.PrinterException
 import java.awt.print.PrinterJob
+import java.io.File
+import java.io.IOException
 import java.util.*
 import javax.print.attribute.HashPrintRequestAttributeSet
 import javax.print.attribute.standard.Copies
@@ -136,6 +142,32 @@ fun printImage(g: gui)
     }
 }
 
+fun savePDF(filePath: String)
+{
+    try
+    {
+        // 空のドキュメントオブジェクトを作成します
+        val document = PDDocument()
+        val page = PDPage()
+        document.addPage(page)
+        val contentStream = PDPageContentStream(document, page)
+        for ((j, image) in images.withIndex())
+        {
+            val xx: Float = 250f * (j / 3) + 10
+            val yy: Float = 250f * 3 - (250f * (j % 3) + 10) - 150f  // PDFはy軸が逆
+            val newimg = Scalr.resize(createBufferedImage(image), 240 * 2) // resize with keeping aspect ratio
+            val pdfimg = JPEGFactory.createFromImage(document, newimg, 1.0f, 300)
+            contentStream.drawImage(pdfimg, xx, yy, pdfimg.width.toFloat() / 2, pdfimg.height.toFloat() / 2)
+        }
+        contentStream.close()
+        document.save(filePath)
+        document.close()
+    } catch (e: IOException)
+    {
+        e.printStackTrace()
+    }
+}
+
 fun main(args: Array<String>)
 {
     val f = JFrame("Image 6up")
@@ -212,6 +244,15 @@ fun main(args: Array<String>)
         printImage(g)
     }
 
+    g.savePDFButton.addActionListener {
+        val fc = JFileChooser()
+        fc.selectedFile = File("image.pdf")
+        val returnVal = fc.showSaveDialog(f)
+        if (returnVal == JFileChooser.CANCEL_OPTION || returnVal == JFileChooser.ERROR_OPTION)
+            return@addActionListener
+
+        savePDF(fc.selectedFile.absolutePath)
+    }
 }
 
 
