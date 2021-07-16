@@ -154,7 +154,7 @@ fun savePDF(filePath: String)
         for ((j, image) in images.withIndex())
         {
             val xx: Float = 250f * (j / 3) + 10
-            val yy: Float = 250f * 3 - (250f * (j % 3) + 10) - 150f  // PDFはy軸が逆
+            val yy: Float = 250f * 3 - (250f * (j % 3) + 10) - 210f  // PDFはy軸が逆 位置調整20210716
             val newimg = Scalr.resize(createBufferedImage(image), 240 * 2) // resize with keeping aspect ratio
             val pdfimg = JPEGFactory.createFromImage(document, newimg, 1.0f, 300)
             contentStream.drawImage(pdfimg, xx, yy, pdfimg.width.toFloat() / 2, pdfimg.height.toFloat() / 2)
