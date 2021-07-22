@@ -40,6 +40,11 @@ import javax.swing.*
 
 var imagesPanel: Vector<JPanel> = Vector<JPanel>()
 var images: Vector<Image> = Vector<Image>()
+var nup: Int = 2
+
+data class PageElement(var imgSize: Float, var xnum: Int, var ynum: Int)
+
+var pagenum: Vector<PageElement> = Vector<PageElement>()
 
 class CustomListCellRenderer : DefaultListCellRenderer()
 {
@@ -81,10 +86,15 @@ class PrintOnePage : Printable
         //        g2.drawString("ogehage",0,0)
         for ((j, image) in images.withIndex())
         {
-            val xx = 250 * (j / 3) + 10
-            val yy = 250 * (j % 3) + 10
-            val newimg = Scalr.resize(createBufferedImage(image), 240) // resize with keeping aspect ratio
-            g2.drawImage(newimg, xx, yy, null)
+            if(j>=pagenum[nup].xnum*pagenum[nup].ynum)
+                break
+            val xx = pagenum[nup].imgSize * (j / pagenum[nup].ynum) + 10
+            val yy = pagenum[nup].imgSize * (j % pagenum[nup].ynum) + 10
+            val newimg = Scalr.resize(
+                createBufferedImage(image),
+                (pagenum[nup].imgSize - 10).toInt()
+            ) // resize with keeping aspect ratio
+            g2.drawImage(newimg, xx.toInt(), yy.toInt(), null)
         }
         return PAGE_EXISTS
     }
@@ -153,9 +163,15 @@ fun savePDF(filePath: String)
         val contentStream = PDPageContentStream(document, page)
         for ((j, image) in images.withIndex())
         {
-            val xx: Float = 250f * (j / 3) + 10
-            val yy: Float = 250f * 3 - (250f * (j % 3) + 10) - 210f  // PDFはy軸が逆 位置調整20210716
-            val newimg = Scalr.resize(createBufferedImage(image), 240 * 2) // resize with keeping aspect ratio
+            if(j>=pagenum[nup].xnum*pagenum[nup].ynum)
+                break
+            val xx: Float = pagenum[nup].imgSize * (j / pagenum[nup].ynum) + 10
+            val yy: Float =
+                pagenum[nup].imgSize * pagenum[nup].ynum - (pagenum[nup].imgSize * (j % pagenum[nup].ynum) + 10) - pagenum[nup].imgSize + 40  // PDFはy軸が逆 位置調整20210716
+            val newimg = Scalr.resize(
+                createBufferedImage(image),
+                ((pagenum[nup].imgSize - 10) * 2).toInt()
+            ) // resize with keeping aspect ratio
             val pdfimg = JPEGFactory.createFromImage(document, newimg, 1.0f, 300)
             contentStream.drawImage(pdfimg, xx, yy, pdfimg.width.toFloat() / 2, pdfimg.height.toFloat() / 2)
         }
@@ -168,10 +184,24 @@ fun savePDF(filePath: String)
     }
 }
 
+fun setnup(g: gui)
+{
+    nup = when
+    {
+        g.radio1Button.isSelected -> 0
+        g.radio4Button.isSelected -> 1
+        else -> 2
+    }
+}
+
 fun main(args: Array<String>)
 {
     val f = JFrame("Image 6up")
     val g = gui()
+
+    pagenum.add(PageElement(500f, 1, 1))
+    pagenum.add(PageElement(250f, 2, 2))
+    pagenum.add(PageElement(250f, 2, 3))
 
     val menub = JMenuBar()
 
@@ -186,6 +216,7 @@ fun main(args: Array<String>)
     // メニューからの 印刷
     val menuitem1 = JMenuItem("Print")
     menuitem1.addActionListener {
+        setnup(g)
         printImage(g)
     }
 
@@ -200,13 +231,17 @@ fun main(args: Array<String>)
     f.jMenuBar = menub
 
     g.readClipboardButton.mnemonic = KeyEvent.VK_P
-
     f.contentPane = g.panel
     f.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     f.setSize(600, 500)
     f.isResizable = true
     f.setLocationRelativeTo(null)
     f.isVisible = true
+
+    val buttonGroup = ButtonGroup()
+    buttonGroup.add(g.radio1Button)
+    buttonGroup.add(g.radio4Button)
+    buttonGroup.add(g.radio6Button)
 
     g.list1.visibleRowCount = 3
     g.list1.layoutOrientation = JList.VERTICAL_WRAP
@@ -241,10 +276,12 @@ fun main(args: Array<String>)
 
     // Printボタン リストを成形し印刷
     g.printButton.addActionListener {
+        setnup(g)
         printImage(g)
     }
 
     g.savePDFButton.addActionListener {
+        setnup(g)
         val fc = JFileChooser()
         fc.selectedFile = File("image.pdf")
         val returnVal = fc.showSaveDialog(f)
